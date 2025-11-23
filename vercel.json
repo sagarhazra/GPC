@@ -1,7 +1,4 @@
 {
-  "installs": [
-    "bun install"
-  ],
   "builds": [
     {
       "src": "package.json",
