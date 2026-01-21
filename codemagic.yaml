@@ -44,9 +44,9 @@ workflows:
           echo "DEBUG: Skipping build until we see correct names above. Check logs and update YAML!"
 
     artifacts:
-      - ios/**  # Download whole ios/ folder to check manually if needed
-      - build/**/*.ipa
-      - build/**/*.xcarchive
+  - unsigned.ipa                  # Exact path from script (root level)
+  - build/**/*.ipa                # Catch any in build/
+  - build/**/*.xcarchive          # For debug
 
     publishing:
       email:
