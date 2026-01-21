@@ -1,18 +1,16 @@
-# codemagic.yaml - Configuration for building your Expo app on Codemagic
-
 workflows:
   unsigned-ios-build:
     name: Unsigned iOS IPA Build
-    instance_type: mac_mini_m2  # Fast Apple M2 machine (free tier eligible)
-    max_build_duration: 60      # 60 minutes max (should be plenty)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
     environment:
       vars:
-        XCODE_VERSION: "16.0"   # Use a recent Xcode version
+        XCODE_VERSION: "16.0"
     scripts:
       - name: Install Bun
         script: |
           curl -fsSL https://bun.sh/install | bash
-          echo "$HOME/.bun/bin" >> $CM_ENV_PATHS
+          echo 'export PATH="$HOME/.bun/bin:$PATH"' >> $CM_ENV
 
       - name: Install dependencies
         script: |
@@ -48,10 +46,10 @@ workflows:
           mv unsigned.ipa ../../..
 
     artifacts:
-      - build/**/*.ipa               # This makes the IPA downloadable
-      - build/**/*.xcarchive         # Optional: archive for debugging
+      - build/**/*.ipa
+      - build/**/*.xcarchive  # Optional for debugging
 
     publishing:
       email:
         recipients:
-          - 10sagarhazra@gmail.com   # Change to your real email (optional, gets build notifications)
+          - your-email-here@gmail.com   # Change to your real email, or delete this whole publishing block
