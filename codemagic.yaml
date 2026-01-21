@@ -47,13 +47,26 @@ workflows:
             PROVISIONING_PROFILE_SPECIFIER=""
           
           cd ..
-          echo "Archive created. Building IPA..."
+          echo "Archive created. Listing contents of Applications folder:"
+          ls -la build/GoldPriceCalculator.xcarchive/Products/Applications/ || echo "Warning: No Applications folder or empty!"
+          
+          echo "Building IPA..."
           mkdir -p build/ipa/Payload
-          cp -r build/GoldPriceCalculator.xcarchive/Products/Applications/GoldPriceCalculator.app build/ipa/Payload/
+          cp -r build/GoldPriceCalculator.xcarchive/Products/Applications/*.app build/ipa/Payload/ || echo "Warning: No .app file found to copy!"
+          
+          echo "Listing contents of Payload after copy:"
+          ls -la build/ipa/Payload/
+          
+          if [ -z "$(ls -A build/ipa/Payload)" ]; then
+            echo "Error: Payload is empty! No app contents copied. Failing build."
+            exit 1
+          fi
+          
           cd build/ipa
           zip -r ../unsigned.ipa Payload
           cd ../..
           echo "Unsigned IPA created at build/unsigned.ipa"
+          ls -lh build/unsigned.ipa  # Show final IPA size in logs
 
     artifacts:
       - build/unsigned.ipa
