@@ -1,0 +1,57 @@
+# codemagic.yaml - Configuration for building your Expo app on Codemagic
+
+workflows:
+  unsigned-ios-build:
+    name: Unsigned iOS IPA Build
+    instance_type: mac_mini_m2  # Fast Apple M2 machine (free tier eligible)
+    max_build_duration: 60      # 60 minutes max (should be plenty)
+    environment:
+      vars:
+        XCODE_VERSION: "16.0"   # Use a recent Xcode version
+    scripts:
+      - name: Install Bun
+        script: |
+          curl -fsSL https://bun.sh/install | bash
+          echo "$HOME/.bun/bin" >> $CM_ENV_PATHS
+
+      - name: Install dependencies
+        script: |
+          bun install
+
+      - name: Expo Prebuild for iOS
+        script: |
+          bunx expo prebuild --platform ios --clean
+          cd ios
+          pod install --repo-update
+
+      - name: Build unsigned archive and IPA
+        script: |
+          cd ios
+          xcodebuild archive \
+            -workspace gold-price-calculator-04dozbq.xcworkspace \
+            -scheme gold-price-calculator-04dozbq \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath ../build/GoldPriceCalculator.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER=""
+
+          cd ../build/GoldPriceCalculator.xcarchive/Products/Applications
+          mkdir Payload
+          cp -r *.app Payload/
+          cd ..
+          zip -r unsigned.ipa Payload
+          mv unsigned.ipa ../../..
+
+    artifacts:
+      - build/**/*.ipa               # This makes the IPA downloadable
+      - build/**/*.xcarchive         # Optional: archive for debugging
+
+    publishing:
+      email:
+        recipients:
+          - 10sagarhazra@gmail.com   # Change to your real email (optional, gets build notifications)
