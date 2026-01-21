@@ -8,51 +8,43 @@ workflows:
         XCODE_VERSION: "16.0"
     scripts:
       - name: Install Bun
-       scripts:
-  - name: Install Bun
-    script: |
-      curl -fsSL https://bun.sh/install | bash
-      # Quick test to confirm Bun installed (shows in logs)
-      $HOME/.bun/bin/bun --version || echo "Bun install seems to have failed"
+        script: |
+          curl -fsSL https://bun.sh/install | bash
+          # Quick test: show Bun version in logs
+          $HOME/.bun/bin/bun --version || echo "Bun install check failed"
 
-  - name: Install dependencies
-    script: |
-      # Make sure bun is in PATH for this step
-      export PATH="$HOME/.bun/bin:$PATH"
-      bun install
+      - name: Install dependencies
+        script: |
+          # Add Bun to PATH for this step
+          export PATH="$HOME/.bun/bin:$PATH"
+          bun install
 
-  - name: Expo Prebuild for iOS
-    script: |
-      # Make sure bun is in PATH for this step
-      export PATH="$HOME/.bun/bin:$PATH"
-      bunx expo prebuild --platform ios --clean
-      cd ios
-      pod install --repo-update
+      - name: Expo Prebuild for iOS
+        script: |
+          # Add Bun to PATH for this step
+          export PATH="$HOME/.bun/bin:$PATH"
+          bunx expo prebuild --platform ios --clean
+          cd ios
+          pod install --repo-update
 
-  - name: Build unsigned archive and IPA
-    script: |
-      # PATH usually not needed here, but adding it doesn't hurt
-      export PATH="$HOME/.bun/bin:$PATH"
-      cd ios
-      xcodebuild archive \
-        -workspace gold-price-calculator-04dozbq.xcworkspace \
-        -scheme gold-price-calculator-04dozbq \
-        -configuration Release \
-        -sdk iphoneos \
-        -destination 'generic/platform=iOS' \
-        -archivePath ../build/GoldPriceCalculator.xcarchive \
-        CODE_SIGN_IDENTITY="" \
-        CODE_SIGNING_REQUIRED=NO \
-        CODE_SIGNING_ALLOWED=NO \
-        DEVELOPMENT_TEAM="" \
-        PROVISIONING_PROFILE_SPECIFIER=""
+      - name: Build unsigned archive and IPA
+        script: |
+          # Add Bun to PATH (harmless even if not used here)
+          export PATH="$HOME/.bun/bin:$PATH"
+          cd ios
+          xcodebuild archive \
+            -workspace gold-price-calculator-04dozbq.xcworkspace \
+            -scheme gold-price-calculator-04dozbq \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath ../build/GoldPriceCalculator.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER=""
 
-      cd ../build/GoldPriceCalculator.xcarchive/Products/Applications
-      mkdir Payload
-      cp -r *.app Payload/
-      cd ..
-      zip -r unsigned.ipa Payload
-      mv unsigned.ipa ../../..
           cd ../build/GoldPriceCalculator.xcarchive/Products/Applications
           mkdir Payload
           cp -r *.app Payload/
@@ -62,9 +54,9 @@ workflows:
 
     artifacts:
       - build/**/*.ipa
-      - build/**/*.xcarchive  # Optional for debugging
+      - build/**/*.xcarchive  # Optional: for debugging if needed
 
     publishing:
       email:
         recipients:
-          - your-email-here@gmail.com   # Change to your real email, or delete this whole publishing block
+          - your-email@gmail.com  # ← Change to your email or delete this entire publishing block
