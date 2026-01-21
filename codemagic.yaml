@@ -12,8 +12,9 @@ workflows:
           curl -fsSL https://bun.sh/install | bash
           $HOME/.bun/bin/bun --version || echo "Bun install check failed"
 
-      - name: Install dependencies
+      - name: Clean and reinstall dependencies
         script: |
+          rm -rf node_modules ios android
           export PATH="$HOME/.bun/bin:$PATH"
           bun install
 
@@ -28,9 +29,6 @@ workflows:
         script: |
           export PATH="$HOME/.bun/bin:$PATH"
           cd ios
-          echo "Current directory contents:"
-          ls -la
-          echo "Using workspace: GoldPriceCalculator.xcworkspace and scheme: GoldPriceCalculator"
           xcodebuild archive \
             -workspace GoldPriceCalculator.xcworkspace \
             -scheme GoldPriceCalculator \
@@ -51,7 +49,6 @@ workflows:
           zip -r unsigned.ipa Payload
           mv unsigned.ipa ../../..
 
-          # Copy to build/ for better artifact detection
           cp ../../unsigned.ipa ../build/unsigned.ipa
 
     artifacts:
@@ -59,7 +56,6 @@ workflows:
       - build/unsigned.ipa
       - build/**/*.ipa
       - build/**/*.xcarchive
-      - ios/GoldPriceCalculator.xcworkspace  # For debug
 
     publishing:
       email:
