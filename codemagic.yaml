@@ -10,12 +10,13 @@ workflows:
       - name: Install Bun
         script: |
           curl -fsSL https://bun.sh/install | bash
-          $HOME/.bun/bin/bun --version || echo "Bun install check failed"
+          export PATH="$HOME/.bun/bin:$PATH"
+          bun --version || echo "Bun install failed"
 
       - name: Clean and reinstall dependencies
         script: |
-          rm -rf node_modules ios android
           export PATH="$HOME/.bun/bin:$PATH"
+          rm -rf node_modules ios android
           bun install
 
       - name: Expo Prebuild for iOS
@@ -24,11 +25,14 @@ workflows:
           bunx expo prebuild --platform ios --clean
           cd ios
           pod install --repo-update
+          echo "Prebuild and pod install completed. Listing generated files:"
+          ls -la
 
       - name: Build unsigned archive and IPA
         script: |
           export PATH="$HOME/.bun/bin:$PATH"
           cd ios
+          echo "Starting xcodebuild archive..."
           xcodebuild archive \
             -workspace GoldPriceCalculator.xcworkspace \
             -scheme GoldPriceCalculator \
@@ -41,18 +45,17 @@ workflows:
             CODE_SIGNING_ALLOWED=NO \
             DEVELOPMENT_TEAM="" \
             PROVISIONING_PROFILE_SPECIFIER=""
-
-          cd ../build/GoldPriceCalculator.xcarchive/Products/Applications
-          mkdir Payload
-          cp -r *.app Payload/
+          
           cd ..
-          zip -r unsigned.ipa Payload
-          mv unsigned.ipa ../../..
-
-          cp ../../unsigned.ipa ../build/unsigned.ipa
+          echo "Archive created. Building IPA..."
+          mkdir -p build/ipa/Payload
+          cp -r build/GoldPriceCalculator.xcarchive/Products/Applications/GoldPriceCalculator.app build/ipa/Payload/
+          cd build/ipa
+          zip -r ../unsigned.ipa Payload
+          cd ../..
+          echo "Unsigned IPA created at build/unsigned.ipa"
 
     artifacts:
-      - unsigned.ipa
       - build/unsigned.ipa
       - build/**/*.ipa
       - build/**/*.xcarchive
