@@ -36,6 +36,18 @@
         {
           "origin": "https://rork.com/"
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "newArchEnabled": false,
+            "useFrameworks": "static"
+          },
+          "android": {
+            "newArchEnabled": false
+          }
+        }
       ]
     ],
     "experiments": {
