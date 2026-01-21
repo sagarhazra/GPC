@@ -10,8 +10,8 @@ workflows:
       - name: Install Bun
         script: |
           curl -fsSL https://bun.sh/install | bash
+          # This adds Bun's bin directory to PATH for ALL following steps
           echo 'export PATH="$HOME/.bun/bin:$PATH"' >> $CM_ENV
-
       - name: Install dependencies
         script: |
           bun install
