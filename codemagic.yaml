@@ -1,6 +1,6 @@
 workflows:
   unsigned-ios-build:
-    name: Unsigned iOS IPA Build (Debug Mode)
+    name: Unsigned iOS IPA Build
     instance_type: mac_mini_m2
     max_build_duration: 60
     environment:
@@ -10,6 +10,7 @@ workflows:
       - name: Install Bun
         script: |
           curl -fsSL https://bun.sh/install | bash
+          # Quick test to confirm Bun installed
           $HOME/.bun/bin/bun --version || echo "Bun install check failed"
 
       - name: Install dependencies
@@ -24,31 +25,43 @@ workflows:
           cd ios
           pod install --repo-update
 
-      - name: DEBUG - Show exact iOS files and schemes
+      - name: Build unsigned archive and IPA
         script: |
-          echo "=== Contents of ios/ folder ==="
-          ls -la ios/
-          echo "=== xcworkspace files ==="
-          ls -la ios/*.xcworkspace 2>/dev/null || echo "No .xcworkspace found"
-          echo "=== xcodeproj files ==="
-          ls -la ios/*.xcodeproj 2>/dev/null || echo "No .xcodeproj found"
-          echo "=== List all schemes ==="
+          export PATH="$HOME/.bun/bin:$PATH"
           cd ios
-          xcodebuild -list || echo "xcodebuild -list failed, trying with project"
-          xcodebuild -list -project *.xcodeproj 2>/dev/null || echo "No schemes listed"
-          echo "=== Your app.json name/slug for reference ==="
-          cat ../app.json | grep -E '"name":|"slug":'
+          xcodebuild archive \
+            -workspace gold-price-calculator-04dozbq.xcworkspace \
+            -scheme gold-price-calculator-04dozbq \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath ../build/GoldPriceCalculator.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER=""
 
-      - name: Build unsigned archive and IPA (SKIPPED UNTIL DEBUG WORKS)
-        script: |
-          echo "DEBUG: Skipping build until we see correct names above. Check logs and update YAML!"
+          # Package into IPA
+          cd ../build/GoldPriceCalculator.xcarchive/Products/Applications
+          mkdir Payload
+          cp -r *.app Payload/
+          cd ..
+          zip -r unsigned.ipa Payload
+          mv unsigned.ipa ../../..
+
+          # Optional: also place a copy in build/ for better artifact detection
+          cp ../../unsigned.ipa ../build/unsigned.ipa
 
     artifacts:
-  - unsigned.ipa                  # Exact path from script (root level)
-  - build/**/*.ipa                # Catch any in build/
-  - build/**/*.xcarchive          # For debug
+      - unsigned.ipa                     # Exact file from root
+      - build/unsigned.ipa               # Copy we made in build/
+      - build/**/*.ipa                   # Any other ipa files
+      - build/**/*.xcarchive             # The archive itself (useful for debugging)
+      - ios/*.xcworkspace                # The workspace file (debug)
+      - ios/*.xcodeproj                  # The project file (debug)
 
     publishing:
       email:
         recipients:
-          - 10sagarhazra@gmail.com  # Your email from logs
+          - 10sagarhazra@gmail.com       # your email – change or remove this block if you don't want emails
