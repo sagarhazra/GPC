@@ -1,6 +1,6 @@
 workflows:
   unsigned-ios-build:
-    name: Unsigned iOS IPA Build
+    name: Unsigned iOS IPA Build (Debug Mode)
     instance_type: mac_mini_m2
     max_build_duration: 60
     environment:
@@ -10,53 +10,45 @@ workflows:
       - name: Install Bun
         script: |
           curl -fsSL https://bun.sh/install | bash
-          # Quick test: show Bun version in logs
           $HOME/.bun/bin/bun --version || echo "Bun install check failed"
 
       - name: Install dependencies
         script: |
-          # Add Bun to PATH for this step
           export PATH="$HOME/.bun/bin:$PATH"
           bun install
 
       - name: Expo Prebuild for iOS
         script: |
-          # Add Bun to PATH for this step
           export PATH="$HOME/.bun/bin:$PATH"
           bunx expo prebuild --platform ios --clean
           cd ios
           pod install --repo-update
 
-      - name: Build unsigned archive and IPA
+      - name: DEBUG - Show exact iOS files and schemes
         script: |
-          # Add Bun to PATH (harmless even if not used here)
-          export PATH="$HOME/.bun/bin:$PATH"
+          echo "=== Contents of ios/ folder ==="
+          ls -la ios/
+          echo "=== xcworkspace files ==="
+          ls -la ios/*.xcworkspace 2>/dev/null || echo "No .xcworkspace found"
+          echo "=== xcodeproj files ==="
+          ls -la ios/*.xcodeproj 2>/dev/null || echo "No .xcodeproj found"
+          echo "=== List all schemes ==="
           cd ios
-          xcodebuild archive \
-            -workspace gold-price-calculator-04dozbq.xcworkspace \
-            -scheme gold-price-calculator-04dozbq \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -archivePath ../build/GoldPriceCalculator.xcarchive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            DEVELOPMENT_TEAM="" \
-            PROVISIONING_PROFILE_SPECIFIER=""
+          xcodebuild -list || echo "xcodebuild -list failed, trying with project"
+          xcodebuild -list -project *.xcodeproj 2>/dev/null || echo "No schemes listed"
+          echo "=== Your app.json name/slug for reference ==="
+          cat ../app.json | grep -E '"name":|"slug":'
 
-          cd ../build/GoldPriceCalculator.xcarchive/Products/Applications
-          mkdir Payload
-          cp -r *.app Payload/
-          cd ..
-          zip -r unsigned.ipa Payload
-          mv unsigned.ipa ../../..
+      - name: Build unsigned archive and IPA (SKIPPED UNTIL DEBUG WORKS)
+        script: |
+          echo "DEBUG: Skipping build until we see correct names above. Check logs and update YAML!"
 
     artifacts:
+      - ios/**  # Download whole ios/ folder to check manually if needed
       - build/**/*.ipa
-      - build/**/*.xcarchive  # Optional: for debugging if needed
+      - build/**/*.xcarchive
 
     publishing:
       email:
         recipients:
-          - your-email@gmail.com  # ← Change to your email or delete this entire publishing block
+          - 10sagarhazra@gmail.com  # Your email from logs
