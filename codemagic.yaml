@@ -8,36 +8,51 @@ workflows:
         XCODE_VERSION: "16.0"
     scripts:
       - name: Install Bun
-        script: |
-          curl -fsSL https://bun.sh/install | bash
-          # This adds Bun's bin directory to PATH for ALL following steps
-          echo 'export PATH="$HOME/.bun/bin:$PATH"' >> $CM_ENV
-      - name: Install dependencies
-        script: |
-          bun install
+       scripts:
+  - name: Install Bun
+    script: |
+      curl -fsSL https://bun.sh/install | bash
+      # Quick test to confirm Bun installed (shows in logs)
+      $HOME/.bun/bin/bun --version || echo "Bun install seems to have failed"
 
-      - name: Expo Prebuild for iOS
-        script: |
-          bunx expo prebuild --platform ios --clean
-          cd ios
-          pod install --repo-update
+  - name: Install dependencies
+    script: |
+      # Make sure bun is in PATH for this step
+      export PATH="$HOME/.bun/bin:$PATH"
+      bun install
 
-      - name: Build unsigned archive and IPA
-        script: |
-          cd ios
-          xcodebuild archive \
-            -workspace gold-price-calculator-04dozbq.xcworkspace \
-            -scheme gold-price-calculator-04dozbq \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -archivePath ../build/GoldPriceCalculator.xcarchive \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            DEVELOPMENT_TEAM="" \
-            PROVISIONING_PROFILE_SPECIFIER=""
+  - name: Expo Prebuild for iOS
+    script: |
+      # Make sure bun is in PATH for this step
+      export PATH="$HOME/.bun/bin:$PATH"
+      bunx expo prebuild --platform ios --clean
+      cd ios
+      pod install --repo-update
 
+  - name: Build unsigned archive and IPA
+    script: |
+      # PATH usually not needed here, but adding it doesn't hurt
+      export PATH="$HOME/.bun/bin:$PATH"
+      cd ios
+      xcodebuild archive \
+        -workspace gold-price-calculator-04dozbq.xcworkspace \
+        -scheme gold-price-calculator-04dozbq \
+        -configuration Release \
+        -sdk iphoneos \
+        -destination 'generic/platform=iOS' \
+        -archivePath ../build/GoldPriceCalculator.xcarchive \
+        CODE_SIGN_IDENTITY="" \
+        CODE_SIGNING_REQUIRED=NO \
+        CODE_SIGNING_ALLOWED=NO \
+        DEVELOPMENT_TEAM="" \
+        PROVISIONING_PROFILE_SPECIFIER=""
+
+      cd ../build/GoldPriceCalculator.xcarchive/Products/Applications
+      mkdir Payload
+      cp -r *.app Payload/
+      cd ..
+      zip -r unsigned.ipa Payload
+      mv unsigned.ipa ../../..
           cd ../build/GoldPriceCalculator.xcarchive/Products/Applications
           mkdir Payload
           cp -r *.app Payload/
