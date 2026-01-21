@@ -10,7 +10,6 @@ workflows:
       - name: Install Bun
         script: |
           curl -fsSL https://bun.sh/install | bash
-          # Quick test to confirm Bun installed
           $HOME/.bun/bin/bun --version || echo "Bun install check failed"
 
       - name: Install dependencies
@@ -30,8 +29,8 @@ workflows:
           export PATH="$HOME/.bun/bin:$PATH"
           cd ios
           xcodebuild archive \
-            -workspace gold-price-calculator-04dozbq.xcworkspace \
-            -scheme gold-price-calculator-04dozbq \
+            -workspace GoldPriceCalculator.xcworkspace \
+            -scheme GoldPriceCalculator \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
@@ -42,7 +41,6 @@ workflows:
             DEVELOPMENT_TEAM="" \
             PROVISIONING_PROFILE_SPECIFIER=""
 
-          # Package into IPA
           cd ../build/GoldPriceCalculator.xcarchive/Products/Applications
           mkdir Payload
           cp -r *.app Payload/
@@ -50,18 +48,16 @@ workflows:
           zip -r unsigned.ipa Payload
           mv unsigned.ipa ../../..
 
-          # Optional: also place a copy in build/ for better artifact detection
+          # Copy for better artifact visibility
           cp ../../unsigned.ipa ../build/unsigned.ipa
 
     artifacts:
-      - unsigned.ipa                     # Exact file from root
-      - build/unsigned.ipa               # Copy we made in build/
-      - build/**/*.ipa                   # Any other ipa files
-      - build/**/*.xcarchive             # The archive itself (useful for debugging)
-      - ios/*.xcworkspace                # The workspace file (debug)
-      - ios/*.xcodeproj                  # The project file (debug)
+      - unsigned.ipa
+      - build/unsigned.ipa
+      - build/**/*.ipa
+      - build/**/*.xcarchive
 
     publishing:
       email:
         recipients:
-          - 10sagarhazra@gmail.com       # your email – change or remove this block if you don't want emails
+          - 10sagarhazra@gmail.com
